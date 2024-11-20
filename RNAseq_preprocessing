@@ -1,0 +1,27 @@
+#require: hisat2, samtools, java
+
+hisat2 –p 4 –x TAIR10 -1 File_1.fq.gz -2 File_2.fq.gz -S FileName.sam
+
+samtools view -b -@ 4  FileName.sam > FileName.bam
+
+samtools sort -@ 4 FLL3/FLL3.bam > bam/FLL3_sorted.bam
+
+samtools index bam/FLL3_sorted.bam
+
+samtools flagstat bam/SQH1_sorted.bam
+
+java -jar /usr/local/picard/picard.jar MarkDuplicates INPUT=bam/SQH1_sorted.bam OUTPUT=bam/SQH1_mkdup.bam METRICS_FILE=bam/SQH1_mkdup_metrics.txt CREATE_INDEX=true
+
+java -jar /usr/local/picard/picard.jar CollectAlignmentSummaryMetrics INPUT= bam/FLL3_sorted.bam OUTPUT=bam/FLL3_allignmentMetrics.txt REFERENCE_SEQUENCE= /storage/projects/ReferenceGenomes/Arabidopsis_thaliana/Ensembl/TAIR10.fa
+
+java -jar /usr/local/picard/picard.jar CollectInsertSizeMetrics INPUT=bam/FLL3_sorted.bam OUTPUT=bam/FLL3_insert.txt HISTOGRAM_FILE=bam/FLL3_insert.pdf
+
+java -jar /usr/local/picard/picard.jar CollectRnaSeqMetrics INPUT=bam/FLH3_sorted.bam REF_FLAT=refFlat.txt OUTPUT=bam/FLH3_RNA_metrics.txt STRAND=NONE
+
+hisat2-build -p 4 /storage/projects/ReferenceGenomes/Arabidopsis_thaliana/Ensembl/TAIR10.fa hisat2_index
+
+hisat2 -x hisat2_index/TAIR10_hisat2 -1 SQH1/SQH1_1.fq.gz -2 SQH1/SQH1_2.fq.gz -S bam/SQH1.sam -p 4 –t
+
+samtools view –h -@ 4  FileName.sam > FileName.bam
+
+featureCounts -a TAIR10.gtf.gz -p -t exon -g gene_id -o FLRnaSeq.tab FLRnaSeq.bam
