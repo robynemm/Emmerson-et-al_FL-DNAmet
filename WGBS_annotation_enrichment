@@ -1,0 +1,373 @@
+#library
+library(GenomicRanges)
+library(rtracklayer)
+
+annotation<-import.gff3("TAIR10_GFF3_genes_transposons.gff")
+
+#get transposable elements
+TEs<-subset(annotation, type=="transposable_element",type=="transposable_element_gene")
+
+# get genes
+genes<-subset(annotation[!overlapsAny(annotation, TEs, ignore.strand=TRUE)], type=="gene")
+
+# get 5'UTR
+five_UTR<-subset(annotation[overlapsAny(annotation, genes, ignore.strand=TRUE)], type=="five_prime_UTR")
+five_UTR<-setdiff(five_UTR, c(TEs), ignore.strand=TRUE)
+
+# get 3'UTR
+three_UTR<-subset(annotation[overlapsAny(annotation, genes, ignore.strand=TRUE)], type=="three_prime_UTR")
+three_UTR<-setdiff(three_UTR, c(five_UTR, TEs), ignore.strand=TRUE)
+
+# get genes
+exons<-subset(annotation[overlapsAny(annotation, genes, ignore.strand=TRUE)], type=="exon")
+exons<-setdiff(exons, c(five_UTR, three_UTR, TEs), ignore.strand=TRUE)
+
+# get introns
+introns <- setdiff(genes, c(exons, five_UTR, three_UTR), ignore.strand=TRUE)
+
+
+#get promoters
+promoters <- genes
+start(promoters[strand(promoters) == "+"]) <- start(promoters[strand(promoters) == "+"]) - 1000
+end(promoters[strand(promoters) == "+"]) <- start(promoters[strand(promoters) == "+"]) + 0
+start(promoters[strand(promoters) == "-"]) <- end(promoters[strand(promoters) == "-"]) - 0
+end(promoters[strand(promoters) == "-"]) <- end(promoters[strand(promoters) == "-"]) + 1000
+
+promoters <- setdiff(promoters, c(TEs, exons,five_UTR,three_UTR,introns), ignore.strand=TRUE)
+
+
+#get others
+others <- setdiff(subset(annotation, type=="chromosome"), c(TEs, exons,five_UTR,three_UTR,introns, promoters), ignore.strand=TRUE)
+
+
+###########################
+#CHH annotation/enrichment#
+###########################
+annotation_counts_CHH <- matrix(0, ncol=7, nrow=5)
+colnames(annotation_counts_CHH) <- c("promoters","exons", "introns", "5'UTR", "3'UTR", "TEs", "others")
+rownames(annotation_counts_CHH) <- c("Whole Genome", "SQH vs SQL", "FLH vs FLL", "SQH vs FLH", "SQL vs FLL")
+
+
+annotation_counts_CHH[1,1] <- sum(width(promoters))
+annotation_counts_CHH[1,2] <- sum(width(exons))
+annotation_counts_CHH[1,3] <- sum(width(introns))
+annotation_counts_CHH[1,4] <- sum(width(five_UTR))
+annotation_counts_CHH[1,5] <- sum(width(three_UTR))
+annotation_counts_CHH[1,6] <- sum(width(TEs))
+annotation_counts_CHH[1,7] <- sum(width(others))
+
+#SQHvSQL
+annotation_counts_CHH[2,1] <- sum(width(intersect(promoters,SQ_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[2,2] <- sum(width(intersect(exons,SQ_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[2,3] <- sum(width(intersect(introns,SQ_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[2,4] <- sum(width(intersect(five_UTR,SQ_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[2,5] <- sum(width(intersect(three_UTR,SQ_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[2,6] <- sum(width(intersect(TEs,SQ_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[2,7] <- sum(width(intersect(others,SQ_DMR_CHH, ignore.strand=TRUE)))
+
+#FLHvFLL
+annotation_counts_CHH[3,1] <- sum(width(intersect(promoters,FL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[3,2] <- sum(width(intersect(exons,FL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[3,3] <- sum(width(intersect(introns,FL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[3,4] <- sum(width(intersect(five_UTR,FL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[3,5] <- sum(width(intersect(three_UTR,FL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[3,6] <- sum(width(intersect(TEs,FL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[3,7] <- sum(width(intersect(others,FL_DMR_CHH, ignore.strand=TRUE)))
+
+#SQHvFLH
+annotation_counts_CHH[4,1] <- sum(width(intersect(promoters,HL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[4,2] <- sum(width(intersect(exons,HL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[4,3] <- sum(width(intersect(introns,HL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[4,4] <- sum(width(intersect(five_UTR,HL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[4,5] <- sum(width(intersect(three_UTR,HL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[4,6] <- sum(width(intersect(TEs,HL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[4,7] <- sum(width(intersect(others,HL_DMR_CHH, ignore.strand=TRUE)))
+#SQLvFLL
+annotation_counts_CHH[5,1] <- sum(width(intersect(promoters,LL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[5,2] <- sum(width(intersect(exons,LL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[5,3] <- sum(width(intersect(introns,LL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[5,4] <- sum(width(intersect(five_UTR,LL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[5,5] <- sum(width(intersect(three_UTR,LL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[5,6] <- sum(width(intersect(TEs,LL_DMR_CHH, ignore.strand=TRUE)))
+annotation_counts_CHH[5,7] <- sum(width(intersect(others,LL_DMR_CHH, ignore.strand=TRUE)))
+
+
+
+
+### 
+
+
+annotation_counts_CHH_norm <- annotation_counts_CHH
+totals <- apply(annotation_counts_CHH,1,sum)
+for(i in 1:length(totals)){
+  annotation_counts_CHH_norm[i,] <- annotation_counts_CHH_norm[i,]/totals[i]
+}
+
+annotation_counts_CHH_enrich <- annotation_counts_CHH_norm[2:5,]
+for(i in 2:nrow(annotation_counts_CHH_enrich)){
+  annotation_counts_CHH_enrich[i,] <- log2(annotation_counts_CHH_enrich[i,]/annotation_counts_CHH_enrich[1,])
+}
+
+#set up colour palettes
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+###find way to rotate labels on x axis
+
+pdf("/storage/projects/ZabetLab/BS_seq_TAIR10/Robyn_data/CHH_annotation.pdf", width=6, height=5, pointsize=12)
+par(mar=c(4,4,4,10.5))
+par(xpd = NA)
+barplot(t(annotation_counts_CHH_norm), col=cbbPalette[c(7,2,3,4,5,6,1)], yaxt = "none", main="Functional annotation CpHpH",cex.names=.4)
+axis(2, seq(0, 1, 0.1), las=2,labels = paste0(seq(0, 100, 10), "%"))
+legend(6.5,0.75,colnames(annotation_counts_CHH_norm),fill=cbbPalette[c(7,2,3,4,5,6,1)], bty = "n")
+dev.off()
+
+
+cols_contrast <- c(colorRampPalette(c(cbbPalette[7], "white", cbbPalette[6]))(100))
+legend_image_cols_contrast<-as.raster(matrix(rev(cols_contrast),ncol=1))
+
+
+min_value <- -1
+max_value <- -min_value
+
+pdf("/storage/projects/ZabetLab/BS_seq_TAIR10/Robyn_data/CHH_enrichement_minValue1.pdf", width=6, height=4, pointsize=12)
+layout(matrix(c(1:2),ncol=2,byrow=T), width = c(1,0.25),height = c(1))
+
+par(mar=c(4,5,3,0))
+image(1:ncol(annotation_counts_CHH_enrich), 1:nrow(annotation_counts_CHH_enrich),t(annotation_counts_CHH_enrich),
+      yaxt="n",xaxt="n", xlab="", ylab="", main="log2(obs/exp)", col=cols_contrast, zlim=c(min_value,max_value))
+axis(2, at=1:nrow(annotation_counts_CHH_enrich),labels=rownames(annotation_counts_CHH_enrich), tick = FALSE, col.axis="black", las=2, cex.axis=0.7)
+axis(1, at=1:ncol(annotation_counts_CHH_enrich),labels=colnames(annotation_counts_CHH_enrich), tick = FALSE, col.axis="black", las=1, cex.axis=0.7)
+
+par(mar=c(5, 1, 5, 1)+0.1)
+
+plot(c(0.5,4.5),c(0,1),type = 'n', axes = F,xlab = '', ylab = '')
+
+text(x=3.4, y =seq(0,1,l=3) , labels = c(min_value,0, max_value), cex=1.2)
+rect( 2.0, 0.0, 3,1, border="black", col="white")
+rasterImage(legend_image_cols_contrast, 2, 0, 3,1)
+
+
+dev.off()
+
+###########################
+#CHG annotation/enrichment#
+###########################
+
+
+annotation_counts_CHG <- matrix(0, ncol=7, nrow=5)
+colnames(annotation_counts_CHG) <- c("promoters","exons", "introns", "5'UTR", "3'UTR", "TEs", "others")
+rownames(annotation_counts_CHG) <- c("Whole Genome", "SQH vs SQL", "FLH vs FLL", "SQH vs FLH", "SQL vs FLL")
+
+
+annotation_counts_CHG[1,1] <- sum(width(promoters))
+annotation_counts_CHG[1,2] <- sum(width(exons))
+annotation_counts_CHG[1,3] <- sum(width(introns))
+annotation_counts_CHG[1,4] <- sum(width(five_UTR))
+annotation_counts_CHG[1,5] <- sum(width(three_UTR))
+annotation_counts_CHG[1,6] <- sum(width(TEs))
+annotation_counts_CHG[1,7] <- sum(width(others))
+
+#SQHvSQL
+annotation_counts_CHG[2,1] <- sum(width(intersect(promoters,SQ_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[2,2] <- sum(width(intersect(exons,SQ_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[2,3] <- sum(width(intersect(introns,SQ_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[2,4] <- sum(width(intersect(five_UTR,SQ_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[2,5] <- sum(width(intersect(three_UTR,SQ_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[2,6] <- sum(width(intersect(TEs,SQ_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[2,7] <- sum(width(intersect(others,SQ_DMR_CHG, ignore.strand=TRUE)))
+
+#FLHvFLL
+annotation_counts_CHG[3,1] <- sum(width(intersect(promoters,FL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[3,2] <- sum(width(intersect(exons,FL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[3,3] <- sum(width(intersect(introns,FL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[3,4] <- sum(width(intersect(five_UTR,FL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[3,5] <- sum(width(intersect(three_UTR,FL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[3,6] <- sum(width(intersect(TEs,FL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[3,7] <- sum(width(intersect(others,FL_DMR_CHG, ignore.strand=TRUE)))
+
+#SQHvFLH
+annotation_counts_CHG[4,1] <- sum(width(intersect(promoters,HL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[4,2] <- sum(width(intersect(exons,HL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[4,3] <- sum(width(intersect(introns,HL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[4,4] <- sum(width(intersect(five_UTR,HL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[4,5] <- sum(width(intersect(three_UTR,HL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[4,6] <- sum(width(intersect(TEs,HL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[4,7] <- sum(width(intersect(others,HL_DMR_CHG, ignore.strand=TRUE)))
+#SQLvFLL
+annotation_counts_CHG[5,1] <- sum(width(intersect(promoters,LL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[5,2] <- sum(width(intersect(exons,LL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[5,3] <- sum(width(intersect(introns,LL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[5,4] <- sum(width(intersect(five_UTR,LL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[5,5] <- sum(width(intersect(three_UTR,LL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[5,6] <- sum(width(intersect(TEs,LL_DMR_CHG, ignore.strand=TRUE)))
+annotation_counts_CHG[5,7] <- sum(width(intersect(others,LL_DMR_CHG, ignore.strand=TRUE)))
+
+
+
+
+### 
+
+
+annotation_counts_CHG_norm <- annotation_counts_CHG
+totals <- apply(annotation_counts_CHG,1,sum)
+for(i in 1:length(totals)){
+  annotation_counts_CHG_norm[i,] <- annotation_counts_CHG_norm[i,]/totals[i]
+}
+
+annotation_counts_CHG_enrich <- annotation_counts_CHG_norm[2:5,]
+for(i in 2:nrow(annotation_counts_CHG_enrich)){
+  annotation_counts_CHG_enrich[i,] <- log2(annotation_counts_CHG_enrich[i,]/annotation_counts_CHG_enrich[1,])
+}
+
+#set up colour palettes
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+pdf("/storage/projects/ZabetLab/BS_seq_TAIR10/Robyn_data/CHG_annotation.pdf", width=6, height=5, pointsize=12)
+par(mar=c(4,4,4,10.5))
+par(xpd = NA)
+barplot(t(annotation_counts_CHG_norm), col=cbbPalette[c(7,2,3,4,5,6,1)], yaxt = "none", main="Functional annotation CpHpG",cex.names=.4)
+axis(2, seq(0, 1, 0.1), las=2,labels = paste0(seq(0, 100, 10), "%"))
+legend(6.5,0.75,colnames(annotation_counts_CHG_norm),fill=cbbPalette[c(7,2,3,4,5,6,1)], bty = "n")
+dev.off()
+
+
+cols_contrast <- c(colorRampPalette(c(cbbPalette[7], "white", cbbPalette[6]))(100))
+legend_image_cols_contrast<-as.raster(matrix(rev(cols_contrast),ncol=1))
+
+
+min_value <- -5
+max_value <- -min_value
+
+pdf("/storage/projects/ZabetLab/BS_seq_TAIR10/Robyn_data/CHG_enrichement.pdf", width=6, height=4, pointsize=12)
+layout(matrix(c(1:2),ncol=2,byrow=T), width = c(1,0.25),height = c(1))
+
+par(mar=c(4,5,3,0))
+image(1:ncol(annotation_counts_CHG_enrich), 1:nrow(annotation_counts_CHG_enrich),t(annotation_counts_CHG_enrich),
+      yaxt="n",xaxt="n", xlab="", ylab="", main="log2(obs/exp)", col=cols_contrast, zlim=c(min_value,max_value))
+axis(2, at=1:nrow(annotation_counts_CHG_enrich),labels=rownames(annotation_counts_CHG_enrich), tick = FALSE, col.axis="black", las=2, cex.axis=0.7)
+axis(1, at=1:ncol(annotation_counts_CHG_enrich),labels=colnames(annotation_counts_CHG_enrich), tick = FALSE, col.axis="black", las=1, cex.axis=0.7)
+
+par(mar=c(5, 1, 5, 1)+0.1)
+
+plot(c(0.5,4.5),c(0,1),type = 'n', axes = F,xlab = '', ylab = '')
+
+text(x=3.4, y =seq(0,1,l=3) , labels = c(min_value,0, max_value), cex=1.2)
+rect( 2.0, 0.0, 3,1, border="black", col="white")
+rasterImage(legend_image_cols_contrast, 2, 0, 3,1)
+
+
+dev.off()
+
+
+##########################
+#CG annotation/enrichment#
+##########################
+
+annotation_counts_CG <- matrix(0, ncol=7, nrow=5)
+colnames(annotation_counts_CG) <- c("promoters","exons", "introns", "5'UTR", "3'UTR", "TEs", "others")
+rownames(annotation_counts_CG) <- c("Whole Genome", "SQH vs SQL", "FLH vs FLL", "SQH vs FLH", "SQL vs FLL")
+
+
+annotation_counts_CG[1,1] <- sum(width(promoters))
+annotation_counts_CG[1,2] <- sum(width(exons))
+annotation_counts_CG[1,3] <- sum(width(introns))
+annotation_counts_CG[1,4] <- sum(width(five_UTR))
+annotation_counts_CG[1,5] <- sum(width(three_UTR))
+annotation_counts_CG[1,6] <- sum(width(TEs))
+annotation_counts_CG[1,7] <- sum(width(others))
+
+#SQHvSQL
+annotation_counts_CG[2,1] <- sum(width(intersect(promoters,SQ_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[2,2] <- sum(width(intersect(exons,SQ_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[2,3] <- sum(width(intersect(introns,SQ_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[2,4] <- sum(width(intersect(five_UTR,SQ_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[2,5] <- sum(width(intersect(three_UTR,SQ_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[2,6] <- sum(width(intersect(TEs,SQ_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[2,7] <- sum(width(intersect(others,SQ_DMR_CG, ignore.strand=TRUE)))
+
+#FLHvFLL
+annotation_counts_CG[3,1] <- sum(width(intersect(promoters,FL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[3,2] <- sum(width(intersect(exons,FL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[3,3] <- sum(width(intersect(introns,FL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[3,4] <- sum(width(intersect(five_UTR,FL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[3,5] <- sum(width(intersect(three_UTR,FL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[3,6] <- sum(width(intersect(TEs,FL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[3,7] <- sum(width(intersect(others,FL_DMR_CG, ignore.strand=TRUE)))
+
+#SQHvFLH
+annotation_counts_CG[4,1] <- sum(width(intersect(promoters,HL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[4,2] <- sum(width(intersect(exons,HL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[4,3] <- sum(width(intersect(introns,HL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[4,4] <- sum(width(intersect(five_UTR,HL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[4,5] <- sum(width(intersect(three_UTR,HL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[4,6] <- sum(width(intersect(TEs,HL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[4,7] <- sum(width(intersect(others,HL_DMR_CG, ignore.strand=TRUE)))
+#SQLvFLL
+annotation_counts_CG[5,1] <- sum(width(intersect(promoters,LL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[5,2] <- sum(width(intersect(exons,LL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[5,3] <- sum(width(intersect(introns,LL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[5,4] <- sum(width(intersect(five_UTR,LL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[5,5] <- sum(width(intersect(three_UTR,LL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[5,6] <- sum(width(intersect(TEs,LL_DMR_CG, ignore.strand=TRUE)))
+annotation_counts_CG[5,7] <- sum(width(intersect(others,LL_DMR_CG, ignore.strand=TRUE)))
+
+
+
+
+### 
+
+
+annotation_counts_CG_norm <- annotation_counts_CG
+totals <- apply(annotation_counts_CG,1,sum)
+for(i in 1:length(totals)){
+  annotation_counts_CG_norm[i,] <- annotation_counts_CG_norm[i,]/totals[i]
+}
+
+annotation_counts_CG_enrich <- annotation_counts_CG_norm[2:5,]
+for(i in 2:nrow(annotation_counts_CG_enrich)){
+  annotation_counts_CG_enrich[i,] <- log2(annotation_counts_CG_enrich[i,]/annotation_counts_CG_enrich[1,])
+}
+
+#set up colour palettes
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+pdf("/storage/projects/ZabetLab/BS_seq_TAIR10/Robyn_data/CG_annotation.pdf", width=6, height=5, pointsize=12)
+par(mar=c(4,4,4,10.5))
+par(xpd = NA)
+barplot(t(annotation_counts_CG_norm), col=cbbPalette[c(7,2,3,4,5,6,1)], yaxt = "none", main="Functional annotation CpG",cex.names=.4)
+axis(2, seq(0, 1, 0.1), las=2,labels = paste0(seq(0, 100, 10), "%"))
+
+legend(6.5,0.75,colnames(annotation_counts_CG_norm),fill=cbbPalette[c(7,2,3,4,5,6,1)], bty = "n")
+dev.off()
+
+
+cols_contrast <- c(colorRampPalette(c(cbbPalette[7], "white", cbbPalette[6]))(100))
+legend_image_cols_contrast<-as.raster(matrix(rev(cols_contrast),ncol=1))
+
+
+min_value <- -1
+max_value <- -min_value
+
+pdf("/storage/projects/ZabetLab/BS_seq_TAIR10/Robyn_data/CG_enrichement_minvalueAdj.pdf", width=6, height=4, pointsize=12)
+layout(matrix(c(1:2),ncol=2,byrow=T), width = c(1,0.25),height = c(1))
+
+par(mar=c(4,5,3,0))
+image(1:ncol(annotation_counts_CG_enrich), 1:nrow(annotation_counts_CG_enrich),t(annotation_counts_CG_enrich),
+      yaxt="n",xaxt="n", xlab="", ylab="", main="log2(obs/exp)", col=cols_contrast, zlim=c(min_value,max_value))
+axis(2, at=1:nrow(annotation_counts_CG_enrich),labels=rownames(annotation_counts_CG_enrich), tick = FALSE, col.axis="black", las=2, cex.axis=0.7)
+axis(1, at=1:ncol(annotation_counts_CG_enrich),labels=colnames(annotation_counts_CG_enrich), tick = FALSE, col.axis="black", las=1, cex.axis=0.7)
+
+par(mar=c(5, 1, 5, 1)+0.1)
+
+plot(c(0.5,4.5),c(0,1),type = 'n', axes = F,xlab = '', ylab = '')
+
+text(x=3.4, y =seq(0,1,l=3) , labels = c(min_value,0, max_value), cex=1.2)
+rect( 2.0, 0.0, 3,1, border="black", col="white")
+rasterImage(legend_image_cols_contrast, 2, 0, 3,1)
+
+
+dev.off()
+
