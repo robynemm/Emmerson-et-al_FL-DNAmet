@@ -1,0 +1,36 @@
+###list of required software:
+#Trimmomatic-0.39
+#bismark
+#bowtie2
+
+
+##need to run genome prep once per project-MUST specify directory where your sequences are present
+
+bismark_genome_preparation -bowtie2 ./Robyn_data/FL_methylation/X204SC20083048-Z01-F001/raw_data
+
+############repeat all below steps for every sample file################
+
+##trimming adapters- PE=pair end, SE= single end (for this PE)
+
+java -jar Trimmomatic-0.39/trimmomatic-0.39.jar PE "FLHa_L1_1.fq.gz" "FLHa_L1_2.fq.gz"  "trimmed_FLHa_L1.fastq" //
+ILLUMINACLIP:Trimmomatic-0.39/adapters/TruSeq2-PE.fa:2:30:10 // 
+HEADCROP:6 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+
+###align your sample file with reference genome (FASTA format), output as bam file --this step can take a while 
+
+bismark --bowtie2 -N 1 -L20 -p 4 -score_min L,0,-0.6 /storage/projects/ReferenceGenomes/Arabidopsis_thaliana/Ensembl/TAIR10/Sequence/WholeGenomeFasta //
+trimmed_FLHa_L1.fastq -o bam
+
+###convert bam to sam (sam can be used for next steps quicker than a bam)
+
+samtools view -h -o sam/trimmed_FLH_L1_bismark_bt2.sam bam/trimmed_FLHa_L1_bismark_bt2.bam
+
+##remove duplicate reads 
+
+deduplicate_bismark -s sam/trimmed_FLHa_L1_bismark_bt2.sam
+
+###extract methylation data as CX report- this can be read into R for DMRcaller
+
+bismark_methylation_extractor -s --multicore 4 --bedGraph --CX --cytosine_report //
+--genome_folder /storage/projects/ReferenceGenomes/Arabidopsis_thaliana/Ensembl/TAIR10/Sequence/WholeGenomeFasta/ //
+trimmed_FLHa_L1_bismark_bt2.deduplicated.sam
