@@ -1,0 +1,30 @@
+##requires objects from DMRcaller code
+#genes identifed by overlapping WBGS and RNAseq
+
+mcca<-GRanges(seqnames= Rle("Chr1"), ranges=IRanges(739500, 744200))
+deah<-GRanges(seqnames = Rle("Chr1"), ranges= IRanges (9708900,9714300))
+
+mcols(SQH_all)$methylationLevel <- mcols(SQH_all)$readsM / mcols(SQH_all)$readsN
+mcols(FLH_all)$methylationLevel <- mcols(FLH_all)$readsM / mcols(FLH_all)$readsN
+mcols(SQH_all)$methylationLevel[is.na(mcols(SQH_all)$methylationLevel)] <- 0
+mcols(FLH_all)$methylationLevel[is.na(mcols(FLH_all)$methylationLevel)] <- 0
+
+plotLocalMethylationProfile(SQH_all, FLH_all, mcca, DMRs = NULL, conditionsNames = c("SQH", "FLH"), gff = annotation, windowSize = 300, context = "CG")
+plotLocalMethylationProfile(SQH_all, FLH_all, mcca, DMRs = NULL, conditionsNames = c("SQH", "FLH"), gff = annotation, windowSize = 300, context = "CHG")
+plotLocalMethylationProfile(SQH_all, FLH_all, mcca, DMRs = NULL, conditionsNames = c("SQH", "FLH"), gff = annotation, windowSize = 300, context = "CHH")
+
+mcols(SQL_all)$methylationLevel <- mcols(SQL_all)$readsM / mcols(SQL_all)$readsN
+mcols(FLL_all)$methylationLevel <- mcols(FLL_all)$readsM / mcols(FLL_all)$readsN
+mcols(SQL_all)$methylationLevel[is.na(mcols(SQL_all)$methylationLevel)] <- 0
+mcols(FLL_all)$methylationLevel[is.na(mcols(FLL_all)$methylationLevel)] <- 0
+
+plotLocalMethylationProfile(SQL_all, FLL_all, mcca, DMRs = NULL, conditionsNames = c("SQL", "FLL"), gff = annotation, windowSize = 300, context = "CG")
+plotLocalMethylationProfile(SQL_all, FLL_all, mcca, DMRs = NULL, conditionsNames = c("SQL", "FLL"), gff = annotation, windowSize = 300, context = "CHG")
+plotLocalMethylationProfile(SQL_all, FLL_all, mcca, DMRs = NULL, conditionsNames = c("SQL", "FLL"), gff = annotation, windowSize = 300, context = "CHH")
+
+plotLocalMethylationProfile(SQH_all, FLH_all, deah, DMRs = NULL, conditionsNames = c("SQH", "FLH"), gff = annotation, windowSize = 300, context = "CG")
+plotLocalMethylationProfile(SQH_all, FLH_all, deah, DMRs = NULL, conditionsNames = c("SQH", "FLH"), gff = annotation, windowSize = 300, context = "CHG")
+plotLocalMethylationProfile(SQH_all, FLH_all, deah, DMRs = NULL, conditionsNames = c("SQH", "FLH"), gff = annotation, windowSize = 300, context = "CHH")
+plotLocalMethylationP rofile(SQL_all, FLL_all, deah, DMRs = NULL, conditionsNames = c("SQL", "FLL"), gff = annotation, windowSize = 300, context = "CG")
+plotLocalMethylationProfile(SQL_all, FLL_all, deah, DMRs = NULL, conditionsNames = c("SQL", "FLL"), gff = annotation, windowSize = 300, context = "CHG")
+plotLocalMethylationProfile(SQL_all, FLL_all, deah, DMRs = NULL, conditionsNames = c("SQL", "FLL"), gff = annotation, windowSize = 300, context = "CHH")
