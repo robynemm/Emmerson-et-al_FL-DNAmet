@@ -436,5 +436,102 @@ plot(LL_1kTE$log2FoldChange, LL_1kTE$methylLevel)
 plot(LL_5kTE$log2FoldChange, LL_5kTE$methylLevel)
 dev.off()
 
+##########################################################################################
+##GO term analysis- lists obtained using DAVID
+##GO term plotting 
+setwd("E:/DATA IN THESIS/DNA methylation/")
+SQ_GO<-read.delim("SQ_5kbTE_DEGs_GO.txt")
+FL_GO<-read.delim("FL_5kbTE_DEGs_GO.txt")
+HL_GO<-read.delim("HL_5kbTE_DEGs_GO.txt")
+LL_GO<-read.delim("LL_5kbTE_DEGs_GO.txt")
+
+HL_filtered<- HL_GO %>%
+  filter(FDR <=0.05)
+
+LL_filtered<- LL_GO %>%
+  filter(FDR <=0.05)
+
+FL_filtered<- FL_GO %>%
+  filter(FDR <=0.05)
+
+SQ_filtered<-SQ_GO %>%
+  filter(FDR <=0.05)
+
+SQ_filtered$log10FDR<- -log10(SQ_filtered$FDR)
+FL_filtered$log10FDR<- -log10(FL_filtered$FDR)
+HL_filtered$log10FDR<- -log10(HL_filtered$FDR)
+
+SQ_plot<-NULL
+SQ_plot$Term<-SQ_filtered$Term
+SQ_plot$Genes<-SQ_filtered$Count
+SQ_plot$log10FDR<-SQ_filtered$log10FDR
+SQ_plot$FDR<-SQ_filtered$FDR
+SQ_plot<-as.data.frame(SQ_plot)
+
+FL_plot<-NULL
+FL_plot$Term<-FL_filtered$Term
+FL_plot$Genes<-FL_filtered$Count
+FL_plot$log10FDR<-FL_filtered$log10FDR
+FL_plot$FDR<-FL_filtered$FDR
+FL_plot<-as.data.frame(FL_plot)
+
+HL_plot<-NULL
+HL_plot$Term<-HL_filtered$Term
+HL_plot$Genes<-HL_filtered$Count
+HL_plot$log10FDR<-HL_filtered$log10FDR
+HL_plot$FDR<-HL_filtered$FDR
+HL_plot<-as.data.frame(HL_plot)
+
+library(viridis)
+library(ggplot2)
+
+# Define the color palette
+inferno_palette <- inferno(100)
+
+# Manually specify colors for specific FDR values
+FDR_colors <- c("#fac228","#f57d15",  
+                "#bc3754", "#9f2a63", 
+                "#65156e", "#280b53", "#000435")
+
+
+# Define the corresponding FDR values for each color
+FDR_breaks <- c(4,3.5,3,2.5,2,1.5,1)
+
+# Create a function to map FDR values to colors
+FDR_colour <- function(fdr) {
+  # Find the index of the nearest FDR value in FDR_breaks
+  index <- which.min(abs(FDR_breaks - fdr))
+  # Return the corresponding color from FDR_colors
+  return(FDR_colors[index])
+}
+
+pdf("GO_DEGs_5kbTE.pdf")
+
+ggplot(SQ_plot, aes(x=Term, y=Genes, fill=log10FDR)) +
+  geom_bar(stat="identity") +
+  geom_col(width=0.1)+
+  ggtitle("GO enrichment, SQHvSQL")+
+  scale_fill_gradientn(colors = FDR_colors, limits = range(FDR_breaks), name = "-log10 FDR") +
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+ggplot(FL_plot, aes(x=Term, y=Genes, fill=log10FDR)) +
+  geom_bar(stat="identity") +
+  ggtitle("GO enrichment, FLHvFLL")+
+  scale_fill_gradientn(colors = FDR_colors, limits = range(FDR_breaks), name = "-log10 FDR") +
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+ggplot(HL_plot, aes(x=Term, y=Genes, fill=log10FDR)) +
+  geom_bar(stat="identity") +
+  ggtitle("GO enrichment, SQHvFLH")+
+  scale_fill_gradientn(colors = FDR_colors, limits = range(FDR_breaks), name = "-log10 FDR") +
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+dev.off()
 
 
