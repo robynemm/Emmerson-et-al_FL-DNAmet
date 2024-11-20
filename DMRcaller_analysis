@@ -1,0 +1,200 @@
+library("DMRcaller")
+library("dplyr")
+library("rtracklayer")
+
+setwd("")
+
+###assign CX reports to individual objects
+#SQH
+SQH1<-readBismark("trimmed_SQHa_L1_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+SQH2<-readBismark("trimmed_SQH_L1_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+SQH3<-readBismark("trimmed_SQH_L3_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+SQH4<-readBismark("trimmed_SQH4_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+
+#SQL
+SQL1<-readBismark("trimmed_SQL_L1_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+SQL2<-readBismark("trimmed_SQL_L3_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+SQL3<-readBismark("trimmed_SQL4_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+
+#FLH
+FLH1<-readBismark("trimmed_FLHa_L1_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+FLH2<-readBismark("trimmed_FLH_L1_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+FLH3<-readBismark("trimmed_FLH_L3_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+
+#FLL
+FLL1<-readBismark("trimmed_FLLa_L1_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+FLL2<-readBismark("trimmed_FLL_L1_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+FLL3<-readBismark("trimmed_FLL_L3_bismark_bt2.deduplicated.CX_report.txt.CX_report.txt")
+
+###pool the data for each regime into a single object
+#make into list..
+
+SQH<-GRangesList(SQH1,SQH2,SQH3,SQH4)
+SQL<-GRangesList(SQL1,SQL2,SQL3)
+FLH<-GRangesList(FLH1,FLH2,FLH3)
+FLL<-GRangesList(FLL1,FLL2,FLL3)
+
+SQH_all<-poolMethylationDatasets(SQH)
+SQL_all<-poolMethylationDatasets(SQL)
+FLH_all<-poolMethylationDatasets(FLH)
+FLL_all<-poolMethylationDatasets(FLL)
+
+seqlevelsStyle(SQH_all)<-"TAIR9"
+seqlevelsStyle(SQL_all)<-"TAIR9"
+seqlevelsStyle(FLH_all)<-"TAIR9"
+seqlevelsStyle(FLL_all)<-"TAIR9"
+
+SQ_DMR_CG<-computeDMRs(SQH_all,SQL_all, regions=NULL, context="CG",
+                       method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                       minCytosinesCount=4, minProportionDifference=0.2, minGap=200, minSize=50,
+                       minReadsPerCytosine=4, cores=1)
+
+FL_DMR_CG<-computeDMRs(FLH_all,FLL_all, regions=NULL, context="CG",
+                       method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                       minCytosinesCount=4, minProportionDifference=0.2, minGap=200, minSize=50,
+                       minReadsPerCytosine=4, cores=1)
+
+HL_DMR_CG<-computeDMRs(SQH_all,FLH_all, regions=NULL, context="CG",
+                       method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                       minCytosinesCount=4, minProportionDifference=0.2, minGap=200, minSize=50,
+                       minReadsPerCytosine=4, cores=1)
+
+LL_DMR_CG<-computeDMRs(SQL_all,FLL_all, regions=NULL, context="CG",
+                       method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                       minCytosinesCount=4, minProportionDifference=0.2, minGap=200, minSize=50,
+                       minReadsPerCytosine=4, cores=1)
+SQ_DMR_CHG<-computeDMRs(SQH_all,SQL_all, regions=NULL, context="CHG",
+                        method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                        minCytosinesCount=4, minProportionDifference=0.2, minGap=200, minSize=50,
+                        minReadsPerCytosine=4, cores=1)
+
+FL_DMR_CHG<-computeDMRs(FLH_all,FLL_all, regions=NULL, context="CHG",
+                        method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                        minCytosinesCount=4, minProportionDifference=0.2, minGap=200, minSize=50,
+                        minReadsPerCytosine=4, cores=1)
+
+HL_DMR_CHG<-computeDMRs(SQH_all,FLH_all, regions=NULL, context="CHG",
+                        method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                        minCytosinesCount=4, minProportionDifference=0.2, minGap=200, minSize=50,
+                        minReadsPerCytosine=4, cores=1)
+
+LL_DMR_CHG<-computeDMRs(SQL_all,FLL_all, regions=NULL, context="CG",
+                        method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                        minCytosinesCount=4, minProportionDifference=0.2, minGap=200, minSize=50,
+                        minReadsPerCytosine=4, cores=1)
+SQ_DMR_CHH<-computeDMRs(SQH_all,SQL_all, regions=NULL, context="CHH",
+                        method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                        minCytosinesCount=4, minProportionDifference=0.1, minGap=200, minSize=50,
+                        minReadsPerCytosine=4, cores=1)
+
+FL_DMR_CHH<-computeDMRs(FLH_all,FLL_all, regions=NULL, context="CHH",
+                        method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                        minCytosinesCount=4, minProportionDifference=0.1, minGap=200, minSize=50,
+                        minReadsPerCytosine=4, cores=1)
+
+HL_DMR_CHH<-computeDMRs(SQH_all,FLH_all, regions=NULL, context="CHH",
+                        method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                        minCytosinesCount=4, minProportionDifference=0.1, minGap=200, minSize=50,
+                        minReadsPerCytosine=4, cores=1)
+
+LL_DMR_CHH<-computeDMRs(SQL_all,FLL_all, regions=NULL, context="CHH",
+                        method="bins", binSize=150, test="score", pValueThreshold=0.01,
+                        minCytosinesCount=4, minProportionDifference=0.1, minGap=200, minSize=50,
+                        minReadsPerCytosine=4, cores=1)
+
+
+SQ_allDMRs <-c(SQ_DMR_CG, SQ_DMR_CHG, SQ_DMR_CHH)
+FL_allDMRs <-c(FL_DMR_CG, FL_DMR_CHG, FL_DMR_CHH)
+HL_allDMRs <-c(HL_DMR_CG, HL_DMR_CHG, HL_DMR_CHH)
+LL_allDMRs <-c(LL_DMR_CG, LL_DMR_CHG, LL_DMR_CHH)
+
+SQ_allDMRs$light_treatment <-“SQ”
+FL_allDMRs$light_treatment <-“FL”
+HL_allDMRs$light_treatment <-“HL”
+LL_allDMRs$light_treatment <-“LL”
+
+
+##all DMRs
+seqlevelsStyle(SQ_allDMRs)<-"NCBI"
+seqlevelsStyle(SQ_allDMRs)<-"TAIR9"
+
+seqlevelsStyle(FL_allDMRs)<-"NCBI"
+seqlevelsStyle(FL_allDMRs)<-"TAIR9"
+
+seqlevelsStyle(HL_allDMRs)<-"NCBI"
+seqlevelsStyle(HL_allDMRs)<-"TAIR9"
+
+seqlevelsStyle(LL_allDMRs)<-"NCBI"
+seqlevelsStyle(LL_allDMRs)<-"TAIR9"
+
+#relate DMRs to gene annotations
+#load gene annotation data
+library(TxDb.Athaliana.BioMart.plantsmart28)
+
+all_gene <- genes(TxDb.Athaliana.BioMart.plantsmart28)
+txdb<-TxDb.Athaliana.BioMart.plantsmart28
+# get exons
+exons<-exons(txdb)
+# get promoters
+genes<-genes(txdb)
+promoters<-promoters(genes)
+seqlevelsStyle(all_gene)<-"TAIR9"
+
+################# DMR gene overlaps###########################
+###SQ
+SQ_overlaps <-findOverlaps(SQ_allDMRs,all_gene)
+SQ_allDMRs$gene<-""
+SQ_allDMRs$gene[queryHits(SQ_overlaps)]<-all_gene$gene_id[subjectHits(SQ_overlaps)]
+
+####FL
+FL_overlaps <-findOverlaps(FL_allDMRs,all_gene)
+FL_allDMRs$gene<-""
+FL_allDMRs$gene[queryHits(FL_overlaps)]<-all_gene$gene_id[subjectHits(FL_overlaps)]
+
+###HL
+HL_overlaps <-findOverlaps(HL_allDMRs,all_gene)
+HL_allDMRs$gene<-""
+HL_allDMRs$gene[queryHits(HL_overlaps)]<-all_gene$gene_id[subjectHits(HL_overlaps)]
+
+###LL
+LL_overlaps <-findOverlaps(LL_allDMRs,all_gene)
+LL_allDMRs$gene<-""
+LL_allDMRs$gene[queryHits(LL_overlaps)]<-all_gene$gene_id[subjectHits(LL_overlaps)]
+
+###################Transposable elements################
+
+#read in data table- note the file has been editted to include chromosome number
+TEs<-read.table("TAIR10_Transposable_Elements.txt", header=TRUE)
+TEs<-makeGRangesFromDataFrame(TEs, keep.extra.columns=TRUE)
+
+#####TE overlaps with DMRs- first assigns transposon family name, then the gene code#####
+#SQ
+SQ_TE<-findOverlaps(SQ_allDMRs, TEs)
+SQ_allDMRs$Transposon_Family<-""
+SQ_allDMRs$Transposon_Family[queryHits(SQ_TE)]<-as.character(TEs$Transposon_Family[subjectHits(SQ_TE)])
+SQ_allDMRs$TEgene<-""
+SQ_allDMRs$TEgene[queryHits(SQ_TE)]<-as.character(TEs$Transposon_Name[subjectHits(SQ_TE)])
+
+#FL
+#seqlevelsStyle(FL_allDMRs) <- "NCBI"
+FL_TE<-findOverlaps(FL_allDMRs, TEs)
+FL_allDMRs$Transposon_Family<-""
+FL_allDMRs$Transposon_Family[queryHits(FL_TE)]<-as.character(TEs$Transposon_Family[subjectHits(FL_TE)])
+FL_allDMRs$TEgene<-""
+FL_allDMRs$TEgene[queryHits(FL_TE)]<-as.character(TEs$Transposon_Name[subjectHits(FL_TE)])
+
+#HL
+#seqlevelsStyle(HL_allDMRs) <- "NCBI"
+HL_TE<-findOverlaps(HL_allDMRs, TEs)
+HL_allDMRs$Transposon_Family<-""
+HL_allDMRs$Transposon_Family[queryHits(HL_TE)]<-as.character(TEs$Transposon_Family[subjectHits(HL_TE)])
+HL_allDMRs$TEgene<-""
+HL_allDMRs$TEgene[queryHits(HL_TE)]<-as.character(TEs$Transposon_Name[subjectHits(HL_TE)])
+
+#LL
+#seqlevelsStyle(LL_allDMRs) <- "NCBI"
+LL_TE<-findOverlaps(LL_allDMRs, TEs)
+LL_allDMRs$Transposon_Family<-""
+LL_allDMRs$Transposon_Family[queryHits(LL_TE)]<-as.character(TEs$Transposon_Family[subjectHits(LL_TE)])
+LL_allDMRs$TEgene<-""
+LL_allDMRs$TEgene[queryHits(LL_TE)]<-as.character(TEs$Transposon_Name[subjectHits(LL_TE)])
