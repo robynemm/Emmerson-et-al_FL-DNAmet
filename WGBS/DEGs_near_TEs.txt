@@ -1,0 +1,537 @@
+##requires objects from DMRcaller_analysis and DEGs from RNAseq_analysis
+
+annotation<-import.gff3("TAIR10_GFF3_genes_transposons.gff")
+
+##Differentially methylated TEs with nearby DEGs##
+####################################################################################
+#DEG within 2kb of DM TE
+
+###########
+##FLHvFLL##
+###########
+
+FL_df<-as.data.frame(FL_allDMRs)
+head(FL_df)
+FL_TEs<-""
+FL_TEs$seqnames<-FL_df$seqnames
+
+
+FL_df<-as.data.frame(FL_allDMRs)
+FL_TEs$start<-FL_df$start
+FL_TEs$end<-FL_df$end
+FL_TEs$TEgene<-FL_df$TEgene
+FL_TEs$methylationType<-FL_df$regionType
+FL_TEs$TEmethylation<-FL_df$context
+FL_TEs$methyLevel1<-FL_df$proportion1
+FL_TEs$methyLevel2<-FL_df$proportion2
+FL_TEs$methylLevel<- FL_TEs$methyLevel1 - FL_TEs$methyLevel2
+FL_TEs<-as.data.frame(FL_TEs)
+FL_TEs_gr<-makeGRangesFromDataFrame(FL_TEs, keep.extra.columns=TRUE)
+
+FLte<-findOverlaps(FL_TEs_gr, TEs)
+FL_TEs_gr$TEcoordinate<-""
+FL_TEs_ranges_2<- merge(FL_TEs, TEs, by.x="TEgene", by.y="Transposon_Name")
+FL_TEs_ranges_2<- FL_TEs_ranges_2 %>% dplyr::select (-X.., -start.x, -end.x, - seqnames.y)
+FL_TEs_ranges_2<- mutate(FL_TEs_ranges_2, start.y-2000)
+FL_TEs_ranges_2<- mutate(FL_TEs_ranges_2, end.y+2000)
+
+FL_TEs_overlap2kb<- NULL
+FL_TEs_overlap2kb$seqnames<- FL_TEs_ranges_2$seqnames.x
+FL_TEs_overlap2kb$start<- FL_TEs_ranges_2$start.y-2000
+FL_TEs_overlap2kb$end<- FL_TEs_ranges_2$end.y+2000
+FL_TEs_overlap2kb$TEgene<- FL_TEs_ranges_2$TEgene
+FL_TEs_overlap2kb$methylLevel<- FL_TEs_ranges_2$methylLevel
+FL_TEs_overlap2kb<-as.data.frame(FL_TEs_overlap2kb)
+FL_TEs_overlap2kb_gr<-makeGRangesFromDataFrame(FL_TEs_overlap2kb, keep.extra.columns=TRUE)
+
+#seqlevelsStyle(FL_TEs_overlap2kb_gr)<-"TAIR9"
+FL_TE_2kbgenes<-subsetByOverlaps(annotation, FL_TEs_overlap2kb_gr)
+FL_TE_2kbgenes_subset<- FL_TE_2kbgenes[FL_TE_2kbgenes$type=="gene",]
+
+FLTEgene_2<-findOverlaps(FL_TE_2kbgenes_subset, FL_TEs_overlap2kb_gr)
+FL_TE_2kbgenes_subset$TEgene<- ""
+FL_TE_2kbgenes_subset$TEgene[queryHits(FLTEgene_2)]<-FL_TEs_overlap2kb_gr$TEgene[subjectHits(FLTEgene_2)]
+FL_TE_2kbgenes_subset$methylLevel<- ""
+FL_TE_2kbgenes_subset$methylLevel[queryHits(FLTEgene_2)]<-FL_TEs_overlap2kb_gr$methylLevel[subjectHits(FLTEgene_2)]
+
+FL_TE_2kbgenes_df<-as.data.frame(FL_TE_2kbgenes_subset)
+
+FL_TE_2kbgenes_df<- FL_TE_2kbgenes_df %>% dplyr::select(seqnames,start,end,type,ID,TEgene,methylLevel)
+
+write.csv(FL_TE_2kbgenes_df, file="FL_genesIn2kbTE_DMR.csv")
+
+FL_DEGs<-read.csv("FL_DEGs.csv")
+FL_2kTE<- merge(FL_TE_2kbgenes_df, FL_DEGs, by.x="ID", by.y="X")
+plot(FL_2kTE$log2FoldChange, FL_2kTE$methylLevel)
+
+###########
+##SQHvSQL##
+###########
+
+SQ_df<-as.data.frame(SQ_allDMRs)
+head(SQ_df)
+SQ_TEs<-""
+SQ_TEs$seqnames<-SQ_df$seqnames
+
+
+SQ_df<-as.data.frame(SQ_allDMRs)
+SQ_TEs$start<-SQ_df$start
+SQ_TEs$end<-SQ_df$end
+SQ_TEs$TEgene<-SQ_df$TEgene
+SQ_TEs$methylationType<-SQ_df$regionType
+SQ_TEs$TEmethylation<-SQ_df$context
+SQ_TEs$methyLevel1<-SQ_df$proportion1
+SQ_TEs$methyLevel2<-SQ_df$proportion2
+SQ_TEs$methylLevel<- SQ_TEs$methyLevel1 - SQ_TEs$methyLevel2
+SQ_TEs<-as.data.frame(SQ_TEs)
+SQ_TEs_gr<-makeGRangesFromDataFrame(SQ_TEs, keep.extra.columns=TRUE)
+
+SQte<-findOverlaps(SQ_TEs_gr, TEs)
+SQ_TEs_gr$TEcoordinate<-""
+SQ_TEs_ranges_2<- merge(SQ_TEs, TEs, by.x="TEgene", by.y="Transposon_Name")
+SQ_TEs_ranges_2<- SQ_TEs_ranges_2 %>% dplyr::select (-X.., -start.x, -end.x, - seqnames.y)
+SQ_TEs_ranges_2<- mutate(SQ_TEs_ranges_2, start.y-2000)
+SQ_TEs_ranges_2<- mutate(SQ_TEs_ranges_2, end.y+2000)
+
+SQ_TEs_overlap2kb<- NULL
+SQ_TEs_overlap2kb$seqnames<- SQ_TEs_ranges_2$seqnames.x
+SQ_TEs_overlap2kb$start<- SQ_TEs_ranges_2$start.y-2000
+SQ_TEs_overlap2kb$end<- SQ_TEs_ranges_2$end.y+2000
+SQ_TEs_overlap2kb$TEgene<- SQ_TEs_ranges_2$TEgene
+SQ_TEs_overlap2kb$methylLevel<- SQ_TEs_ranges_2$methylLevel
+SQ_TEs_overlap2kb<-as.data.frame(SQ_TEs_overlap2kb)
+SQ_TEs_overlap2kb_gr<-makeGRangesFromDataFrame(SQ_TEs_overlap2kb, keep.extra.columns=TRUE)
+
+#seqlevelsStyle(SQ_TEs_overlap2kb_gr)<-"TAIR9"
+SQ_TE_2kbgenes<-subsetByOverlaps(annotation, SQ_TEs_overlap2kb_gr)
+SQ_TE_2kbgenes_subset<- SQ_TE_2kbgenes[SQ_TE_2kbgenes$type=="gene",]
+
+SQTEgene_2<-findOverlaps(SQ_TE_2kbgenes_subset, SQ_TEs_overlap2kb_gr)
+SQ_TE_2kbgenes_subset$TEgene<- ""
+SQ_TE_2kbgenes_subset$TEgene[queryHits(SQTEgene_2)]<-SQ_TEs_overlap2kb_gr$TEgene[subjectHits(SQTEgene_2)]
+SQ_TE_2kbgenes_subset$methylLevel<- ""
+SQ_TE_2kbgenes_subset$methylLevel[queryHits(SQTEgene_2)]<-SQ_TEs_overlap2kb_gr$methylLevel[subjectHits(SQTEgene_2)]
+
+SQ_TE_2kbgenes_df<-as.data.frame(SQ_TE_2kbgenes_subset)
+
+SQ_TE_2kbgenes_df<- SQ_TE_2kbgenes_df %>% dplyr::select(seqnames,start,end,type,ID,TEgene,methylLevel)
+
+write.csv(SQ_TE_2kbgenes_df, file="SQ_genesIn2kbTE_DMR.csv")
+
+SQ_DEGs<-read.csv("SQ_DEGs.csv")
+SQ_2kTE<- merge(SQ_TE_2kbgenes_df, SQ_DEGs, by.x="ID", by.y="X")
+plot(SQ_2kTE$log2FoldChange, SQ_2kTE$methylLevel)
+
+
+###########
+##SQHvFLH##
+###########
+HL_df<-as.data.frame(HL_allDMRs)
+head(HL_df)
+HL_TEs<-""
+HL_TEs$seqnames<-HL_df$seqnames
+
+
+HL_df<-as.data.frame(HL_allDMRs)
+HL_TEs$start<-HL_df$start
+HL_TEs$end<-HL_df$end
+HL_TEs$TEgene<-HL_df$TEgene
+HL_TEs$methylationType<-HL_df$regionType
+HL_TEs$TEmethylation<-HL_df$context
+HL_TEs$methyLevel1<-HL_df$proportion1
+HL_TEs$methyLevel2<-HL_df$proportion2
+HL_TEs$methylLevel<- HL_TEs$methyLevel1 - HL_TEs$methyLevel2
+HL_TEs<-as.data.frame(HL_TEs)
+HL_TEs_gr<-makeGRangesFromDataFrame(HL_TEs, keep.extra.columns=TRUE)
+
+HLte<-findOverlaps(HL_TEs_gr, TEs)
+HL_TEs_gr$TEcoordinate<-""
+HL_TEs_ranges_2<- merge(HL_TEs, TEs, by.x="TEgene", by.y="Transposon_Name")
+HL_TEs_ranges_2<- HL_TEs_ranges_2 %>% dplyr::select (-X.., -start.x, -end.x, - seqnames.y)
+HL_TEs_ranges_2<- mutate(HL_TEs_ranges_2, start.y-2000)
+HL_TEs_ranges_2<- mutate(HL_TEs_ranges_2, end.y+2000)
+
+HL_TEs_overlap2kb<- NULL
+HL_TEs_overlap2kb$seqnames<- HL_TEs_ranges_2$seqnames.x
+HL_TEs_overlap2kb$start<- HL_TEs_ranges_2$start.y-2000
+HL_TEs_overlap2kb$end<- HL_TEs_ranges_2$end.y+2000
+HL_TEs_overlap2kb$TEgene<- HL_TEs_ranges_2$TEgene
+HL_TEs_overlap2kb$methylLevel<- HL_TEs_ranges_2$methylLevel
+HL_TEs_overlap2kb<-as.data.frame(HL_TEs_overlap2kb)
+HL_TEs_overlap2kb_gr<-makeGRangesFromDataFrame(HL_TEs_overlap2kb, keep.extra.columns=TRUE)
+
+#seqlevelsStyle(HL_TEs_overlap2kb_gr)<-"TAIR9"
+HL_TE_2kbgenes<-subsetByOverlaps(annotation, HL_TEs_overlap2kb_gr)
+HL_TE_2kbgenes_subset<- HL_TE_2kbgenes[HL_TE_2kbgenes$type=="gene",]
+
+HLTEgene_2<-findOverlaps(HL_TE_2kbgenes_subset, HL_TEs_overlap2kb_gr)
+HL_TE_2kbgenes_subset$TEgene<- ""
+HL_TE_2kbgenes_subset$TEgene[queryHits(HLTEgene_2)]<-HL_TEs_overlap2kb_gr$TEgene[subjectHits(HLTEgene_2)]
+HL_TE_2kbgenes_subset$methylLevel<- ""
+HL_TE_2kbgenes_subset$methylLevel[queryHits(HLTEgene_2)]<-HL_TEs_overlap2kb_gr$methylLevel[subjectHits(HLTEgene_2)]
+
+HL_TE_2kbgenes_df<-as.data.frame(HL_TE_2kbgenes_subset)
+
+HL_TE_2kbgenes_df<- HL_TE_2kbgenes_df %>% dplyr::select(seqnames,start,end,type,ID,TEgene,methylLevel)
+
+write.csv(HL_TE_2kbgenes_df, file="HL_genesIn2kbTE_DMR.csv")
+
+HL_DEGs<-read.csv("HL_DEGs.csv")
+HL_2kTE<- merge(HL_TE_2kbgenes_df, HL_DEGs, by.x="ID", by.y="X")
+plot(HL_2kTE$log2FoldChange, HL_2kTE$methylLevel)
+
+
+###########
+##SQLvFLL##
+###########
+LL_df<-as.data.frame(LL_allDMRs)
+head(LL_df)
+LL_TEs<-""
+LL_TEs$seqnames<-LL_df$seqnames
+
+
+LL_df<-as.data.frame(LL_allDMRs)
+LL_TEs$start<-LL_df$start
+LL_TEs$end<-LL_df$end
+LL_TEs$TEgene<-LL_df$TEgene
+LL_TEs$methylationType<-LL_df$regionType
+LL_TEs$TEmethylation<-LL_df$context
+LL_TEs$methyLevel1<-LL_df$proportion1
+LL_TEs$methyLevel2<-LL_df$proportion2
+LL_TEs$methylLevel<- LL_TEs$methyLevel1 - LL_TEs$methyLevel2
+LL_TEs<-as.data.frame(LL_TEs)
+LL_TEs_gr<-makeGRangesFromDataFrame(LL_TEs, keep.extra.columns=TRUE)
+
+LLte<-findOverlaps(LL_TEs_gr, TEs)
+LL_TEs_gr$TEcoordinate<-""
+LL_TEs_ranges_2<- merge(LL_TEs, TEs, by.x="TEgene", by.y="Transposon_Name")
+LL_TEs_ranges_2<- LL_TEs_ranges_2 %>% dplyr::select (-X.., -start.x, -end.x, - seqnames.y)
+LL_TEs_ranges_2<- mutate(LL_TEs_ranges_2, start.y-2000)
+LL_TEs_ranges_2<- mutate(LL_TEs_ranges_2, end.y+2000)
+
+LL_TEs_overlap2kb<- NULL
+LL_TEs_overlap2kb$seqnames<- LL_TEs_ranges_2$seqnames.x
+LL_TEs_overlap2kb$start<- LL_TEs_ranges_2$start.y-2000
+LL_TEs_overlap2kb$end<- LL_TEs_ranges_2$end.y+2000
+LL_TEs_overlap2kb$TEgene<- LL_TEs_ranges_2$TEgene
+LL_TEs_overlap2kb$methylLevel<- LL_TEs_ranges_2$methylLevel
+LL_TEs_overlap2kb<-as.data.frame(LL_TEs_overlap2kb)
+LL_TEs_overlap2kb_gr<-makeGRangesFromDataFrame(LL_TEs_overlap2kb, keep.extra.columns=TRUE)
+
+#seqlevelsStyle(LL_TEs_overlap2kb_gr)<-"TAIR9"
+LL_TE_2kbgenes<-subsetByOverlaps(annotation, LL_TEs_overlap2kb_gr)
+LL_TE_2kbgenes_subset<- LL_TE_2kbgenes[LL_TE_2kbgenes$type=="gene",]
+
+LLTEgene_2<-findOverlaps(LL_TE_2kbgenes_subset, LL_TEs_overlap2kb_gr)
+LL_TE_2kbgenes_subset$TEgene<- ""
+LL_TE_2kbgenes_subset$TEgene[queryHits(LLTEgene_2)]<-LL_TEs_overlap2kb_gr$TEgene[subjectHits(LLTEgene_2)]
+LL_TE_2kbgenes_subset$methylLevel<- ""
+LL_TE_2kbgenes_subset$methylLevel[queryHits(LLTEgene_2)]<-LL_TEs_overlap2kb_gr$methylLevel[subjectHits(LLTEgene_2)]
+
+LL_TE_2kbgenes_df<-as.data.frame(LL_TE_2kbgenes_subset)
+
+LL_TE_2kbgenes_df<- LL_TE_2kbgenes_df %>% dplyr::select(seqnames,start,end,type,ID,TEgene,methylLevel)
+
+write.csv(LL_TE_2kbgenes_df, file="LL_genesIn2kbTE_DMR.csv")
+
+LL_DEGs<-read.csv("LL_DEGs.csv")
+LL_2kTE<- merge(LL_TE_2kbgenes_df, LL_DEGs, by.x="ID", by.y="X")
+plot(LL_2kTE$log2FoldChange, LL_2kTE$methylLevel)
+
+##############################################################################################
+#DEGs within 5kb of DM TE
+LL_TEs_ranges_5<- merge(LL_TEs, TEs, by.x="TEgene", by.y="Transposon_Name")
+LL_TEs_ranges_5<- LL_TEs_ranges_5 %>% dplyr::select (-X.., -start.x, -end.x, - seqnames.y)
+LL_TEs_ranges_5<- mutate(LL_TEs_ranges_5, start.y-5000)
+LL_TEs_ranges_5<- mutate(LL_TEs_ranges_5, end.y+5000)
+
+LL_TEs_overlap5kb<- NULL
+LL_TEs_overlap5kb$seqnames<- LL_TEs_ranges_5$seqnames.x
+LL_TEs_overlap5kb$start<- LL_TEs_ranges_5$start.y-5000
+LL_TEs_overlap5kb$end<- LL_TEs_ranges_5$end.y+5000
+LL_TEs_overlap5kb$TEgene<- LL_TEs_ranges_5$TEgene
+LL_TEs_overlap5kb$methylLevel<- LL_TEs_ranges_5$methylLevel
+LL_TEs_overlap5kb<-as.data.frame(LL_TEs_overlap5kb)
+LL_TEs_overlap5kb_gr<-makeGRangesFromDataFrame(LL_TEs_overlap5kb, keep.extra.columns=TRUE)
+
+#seqlevelsStyle(LL_TEs_overlap5kb_gr)<-"TAIR9"
+LL_TE_5kbgenes<-subsetByOverlaps(annotation, LL_TEs_overlap5kb_gr)
+LL_TE_5kbgenes_subset<- LL_TE_5kbgenes[LL_TE_5kbgenes$type=="gene",]
+
+LLTEgene_5<-findOverlaps(LL_TE_5kbgenes_subset, LL_TEs_overlap5kb_gr)
+LL_TE_5kbgenes_subset$TEgene<- ""
+LL_TE_5kbgenes_subset$TEgene[queryHits(LLTEgene_5)]<-LL_TEs_overlap5kb_gr$TEgene[subjectHits(LLTEgene_5)]
+LL_TE_5kbgenes_subset$methylLevel<- ""
+LL_TE_5kbgenes_subset$methylLevel[queryHits(LLTEgene_5)]<-LL_TEs_overlap5kb_gr$methylLevel[subjectHits(LLTEgene_5)]
+
+LL_TE_5kbgenes_df<-as.data.frame(LL_TE_5kbgenes_subset)
+
+LL_TE_5kbgenes_df<- LL_TE_5kbgenes_df %>% dplyr::select(seqnames,start,end,type,ID,TEgene,methylLevel)
+
+write.csv(LL_TE_5kbgenes_df, file="LL_genesIn5kbTE_DMR.csv")
+
+LL_DEGs<-read.csv("LL_DEGs.csv")
+LL_5kTE<- merge(LL_TE_5kbgenes_df, LL_DEGs, by.x="ID", by.y="X")
+plot(LL_5kTE$log2FoldChange, LL_5kTE$methylLevel)
+
+########################################################################################################
+#DEGs within 1kb of DM TE
+FL_TEs_ranges_1<- merge(FL_TEs, TEs, by.x="TEgene", by.y="Transposon_Name")
+FL_TEs_ranges_1<- FL_TEs_ranges_1 %>% dplyr::select (-X.., -start.x, -end.x, - seqnames.y)
+
+FL_TEs_overlap1kb<- NULL
+FL_TEs_overlap1kb$seqnames<- FL_TEs_ranges_1$seqnames.x
+FL_TEs_overlap1kb$start<- FL_TEs_ranges_1$start.y-1000
+FL_TEs_overlap1kb$end<- FL_TEs_ranges_1$end.y+1000
+FL_TEs_overlap1kb$TEgene<- FL_TEs_ranges_1$TEgene
+FL_TEs_overlap1kb$methylLevel<- FL_TEs_ranges_1$methylLevel
+FL_TEs_overlap1kb<-as.data.frame(FL_TEs_overlap1kb)
+FL_TEs_overlap1kb_gr<-makeGRangesFromDataFrame(FL_TEs_overlap1kb, keep.extra.columns=TRUE)
+
+#seqlevelsStyle(FL_TEs_overlap1kb_gr)<-"TAIR9"
+FL_TE_1kbgenes<-subsetByOverlaps(annotation, FL_TEs_overlap1kb_gr)
+FL_TE_1kbgenes_subset<- FL_TE_1kbgenes[FL_TE_1kbgenes$type=="gene",]
+
+FLTEgene_1<-findOverlaps(FL_TE_1kbgenes_subset, FL_TEs_overlap1kb_gr)
+FL_TE_1kbgenes_subset$TEgene<- ""
+FL_TE_1kbgenes_subset$TEgene[queryHits(FLTEgene_1)]<-FL_TEs_overlap1kb_gr$TEgene[subjectHits(FLTEgene_1)]
+FL_TE_1kbgenes_subset$methylLevel<- ""
+FL_TE_1kbgenes_subset$methylLevel[queryHits(FLTEgene_1)]<-FL_TEs_overlap1kb_gr$methylLevel[subjectHits(FLTEgene_1)]
+
+FL_TE_1kbgenes_df<-as.data.frame(FL_TE_1kbgenes_subset)
+
+FL_TE_1kbgenes_df<- FL_TE_1kbgenes_df %>% dplyr::select(seqnames,start,end,type,ID,TEgene,methylLevel)
+
+write.csv(FL_TE_1kbgenes_df, file="FL_genesIn1kbTE_DMR.csv")
+
+#FL_DEGs<-read.csv("FL_DEGs.csv")
+FL_1kTE<- merge(FL_TE_1kbgenes_df, FL_DEGs, by.x="ID", by.y="X")
+plot(FL_1kTE$log1FoldChange, FL_1kTE$methylLevel)
+
+pdf("FL_TE_genes.pdf")
+plot(FL_1kTE$log1FoldChange, FL_1kTE$methylLevel)
+plot(FL_1kTE$log1FoldChange, FL_1kTE$methylLevel)
+plot(FL_5kTE$log1FoldChange, FL_5kTE$methylLevel)
+dev.off()
+
+
+SQ_TEs_ranges_1<- merge(SQ_TEs, TEs, by.x="TEgene", by.y="Transposon_Name")
+SQ_TEs_ranges_1<- SQ_TEs_ranges_1 %>% dplyr::select (-X.., -start.x, -end.x, - seqnames.y)
+SQ_TEs_ranges_1<- mutate(SQ_TEs_ranges_1, start.y-1000)
+SQ_TEs_ranges_1<- mutate(SQ_TEs_ranges_1, end.y+1000)
+
+SQ_TEs_overlap1kb<- NULL
+SQ_TEs_overlap1kb$seqnames<- SQ_TEs_ranges_1$seqnames.x
+SQ_TEs_overlap1kb$start<- SQ_TEs_ranges_1$start.y-1000
+SQ_TEs_overlap1kb$end<- SQ_TEs_ranges_1$end.y+1000
+SQ_TEs_overlap1kb$TEgene<- SQ_TEs_ranges_1$TEgene
+SQ_TEs_overlap1kb$methylLevel<- SQ_TEs_ranges_1$methylLevel
+SQ_TEs_overlap1kb<-as.data.frame(SQ_TEs_overlap1kb)
+SQ_TEs_overlap1kb_gr<-makeGRangesFromDataFrame(SQ_TEs_overlap1kb, keep.extra.columns=TRUE)
+
+#seqlevelsStyle(SQ_TEs_overlap1kb_gr)<-"TAIR9"
+SQ_TE_1kbgenes<-subsetByOverlaps(annotation, SQ_TEs_overlap1kb_gr)
+SQ_TE_1kbgenes_subset<- SQ_TE_1kbgenes[SQ_TE_1kbgenes$type=="gene",]
+
+SQTEgene_1<-findOverlaps(SQ_TE_1kbgenes_subset, SQ_TEs_overlap1kb_gr)
+SQ_TE_1kbgenes_subset$TEgene<- ""
+SQ_TE_1kbgenes_subset$TEgene[queryHits(SQTEgene_1)]<-SQ_TEs_overlap1kb_gr$TEgene[subjectHits(SQTEgene_1)]
+SQ_TE_1kbgenes_subset$methylLevel<- ""
+SQ_TE_1kbgenes_subset$methylLevel[queryHits(SQTEgene_1)]<-SQ_TEs_overlap1kb_gr$methylLevel[subjectHits(SQTEgene_1)]
+
+SQ_TE_1kbgenes_df<-as.data.frame(SQ_TE_1kbgenes_subset)
+
+SQ_TE_1kbgenes_df<- SQ_TE_1kbgenes_df %>% dplyr::select(seqnames,start,end,type,ID,TEgene,methylLevel)
+
+write.csv(SQ_TE_1kbgenes_df, file="SQ_genesIn1kbTE_DMR.csv")
+
+SQ_DEGs<-read.csv("SQ_DEGs.csv")
+SQ_1kTE<- merge(SQ_TE_1kbgenes_df, SQ_DEGs, by.x="ID", by.y="X")
+plot(SQ_1kTE$log1FoldChange, SQ_1kTE$methylLevel)
+
+pdf("SQ_TE_genes.pdf")
+plot(SQ_1kTE$log1FoldChange, SQ_1kTE$methylLevel)
+plot(SQ_1kTE$log1FoldChange, SQ_1kTE$methylLevel)
+plot(SQ_5kTE$log1FoldChange, SQ_5kTE$methylLevel)
+dev.off()
+
+HL_TEs_ranges_1<- merge(HL_TEs, TEs, by.x="TEgene", by.y="Transposon_Name")
+HL_TEs_ranges_1<- HL_TEs_ranges_1 %>% dplyr::select (-X.., -start.x, -end.x, - seqnames.y)
+HL_TEs_ranges_1<- mutate(HL_TEs_ranges_1, start.y-1000)
+HL_TEs_ranges_1<- mutate(HL_TEs_ranges_1, end.y+1000)
+
+HL_TEs_overlap1kb<- NULL
+HL_TEs_overlap1kb$seqnames<- HL_TEs_ranges_1$seqnames.x
+HL_TEs_overlap1kb$start<- HL_TEs_ranges_1$start.y-1000
+HL_TEs_overlap1kb$end<- HL_TEs_ranges_1$end.y+1000
+HL_TEs_overlap1kb$TEgene<- HL_TEs_ranges_1$TEgene
+HL_TEs_overlap1kb$methylLevel<- HL_TEs_ranges_1$methylLevel
+HL_TEs_overlap1kb<-as.data.frame(HL_TEs_overlap1kb)
+HL_TEs_overlap1kb_gr<-makeGRangesFromDataFrame(HL_TEs_overlap1kb, keep.extra.columns=TRUE)
+
+#seqlevelsStyle(HL_TEs_overlap1kb_gr)<-"TAIR9"
+HL_TE_1kbgenes<-subsetByOverlaps(annotation, HL_TEs_overlap1kb_gr)
+HL_TE_1kbgenes_subset<- HL_TE_1kbgenes[HL_TE_1kbgenes$type=="gene",]
+
+HLTEgene_1<-findOverlaps(HL_TE_1kbgenes_subset, HL_TEs_overlap1kb_gr)
+HL_TE_1kbgenes_subset$TEgene<- ""
+HL_TE_1kbgenes_subset$TEgene[queryHits(HLTEgene_1)]<-HL_TEs_overlap1kb_gr$TEgene[subjectHits(HLTEgene_1)]
+HL_TE_1kbgenes_subset$methylLevel<- ""
+HL_TE_1kbgenes_subset$methylLevel[queryHits(HLTEgene_1)]<-HL_TEs_overlap1kb_gr$methylLevel[subjectHits(HLTEgene_1)]
+
+HL_TE_1kbgenes_df<-as.data.frame(HL_TE_1kbgenes_subset)
+
+HL_TE_1kbgenes_df<- HL_TE_1kbgenes_df %>% dplyr::select(seqnames,start,end,type,ID,TEgene,methylLevel)
+
+write.csv(HL_TE_1kbgenes_df, file="HL_genesIn1kbTE_DMR.csv")
+
+HL_DEGs<-read.csv("HL_DEGs.csv")
+HL_1kTE<- merge(HL_TE_1kbgenes_df, HL_DEGs, by.x="ID", by.y="X")
+plot(HL_1kTE$log1FoldChange, HL_1kTE$methylLevel)
+
+pdf("HL_TE_genes.pdf")
+plot(HL_1kTE$log2FoldChange, HL_1kTE$methylLevel)
+plot(HL_1kTE$log2FoldChange, HL_1kTE$methylLevel)
+plot(HL_5kTE$log2FoldChange, HL_5kTE$methylLevel)
+dev.off()
+
+
+LL_TEs_ranges_1<- merge(LL_TEs, TEs, by.x="TEgene", by.y="Transposon_Name")
+LL_TEs_ranges_1<- LL_TEs_ranges_1 %>% dplyr::select (-X.., -start.x, -end.x, - seqnames.y)
+LL_TEs_ranges_1<- mutate(LL_TEs_ranges_1, start.y-1000)
+LL_TEs_ranges_1<- mutate(LL_TEs_ranges_1, end.y+1000)
+
+LL_TEs_overlap1kb<- NULL
+LL_TEs_overlap1kb$seqnames<- LL_TEs_ranges_1$seqnames.x
+LL_TEs_overlap1kb$start<- LL_TEs_ranges_1$start.y-1000
+LL_TEs_overlap1kb$end<- LL_TEs_ranges_1$end.y+1000
+LL_TEs_overlap1kb$TEgene<- LL_TEs_ranges_1$TEgene
+LL_TEs_overlap1kb$methylLevel<- LL_TEs_ranges_1$methylLevel
+LL_TEs_overlap1kb<-as.data.frame(LL_TEs_overlap1kb)
+LL_TEs_overlap1kb_gr<-makeGRangesFromDataFrame(LL_TEs_overlap1kb, keep.extra.columns=TRUE)
+
+#seqlevelsStyle(LL_TEs_overlap1kb_gr)<-"TAIR9"
+LL_TE_1kbgenes<-subsetByOverlaps(annotation, LL_TEs_overlap1kb_gr)
+LL_TE_1kbgenes_subset<- LL_TE_1kbgenes[LL_TE_1kbgenes$type=="gene",]
+
+LLTEgene_1<-findOverlaps(LL_TE_1kbgenes_subset, LL_TEs_overlap1kb_gr)
+LL_TE_1kbgenes_subset$TEgene<- ""
+LL_TE_1kbgenes_subset$TEgene[queryHits(LLTEgene_1)]<-LL_TEs_overlap1kb_gr$TEgene[subjectHits(LLTEgene_1)]
+LL_TE_1kbgenes_subset$methylLevel<- ""
+LL_TE_1kbgenes_subset$methylLevel[queryHits(LLTEgene_1)]<-LL_TEs_overlap1kb_gr$methylLevel[subjectHits(LLTEgene_1)]
+
+LL_TE_1kbgenes_df<-as.data.frame(LL_TE_1kbgenes_subset)
+
+LL_TE_1kbgenes_df<- LL_TE_1kbgenes_df %>% dplyr::select(seqnames,start,end,type,ID,TEgene,methylLevel)
+
+write.csv(LL_TE_1kbgenes_df, file="LL_genesIn1kbTE_DMR.csv")
+
+LL_DEGs<-read.csv("LL_DEGs.csv")
+LL_1kTE<- merge(LL_TE_1kbgenes_df, LL_DEGs, by.x="ID", by.y="X")
+plot(LL_1kTE$log2FoldChange, LL_1kTE$methylLevel)
+
+pdf("LL_TE_genes.pdf")
+plot(LL_1kTE$log2FoldChange, LL_1kTE$methylLevel)
+plot(LL_1kTE$log2FoldChange, LL_1kTE$methylLevel)
+plot(LL_5kTE$log2FoldChange, LL_5kTE$methylLevel)
+dev.off()
+
+##########################################################################################
+##GO term analysis- lists obtained using DAVID
+##GO term plotting 
+setwd("E:/DATA IN THESIS/DNA methylation/")
+SQ_GO<-read.delim("SQ_5kbTE_DEGs_GO.txt")
+FL_GO<-read.delim("FL_5kbTE_DEGs_GO.txt")
+HL_GO<-read.delim("HL_5kbTE_DEGs_GO.txt")
+LL_GO<-read.delim("LL_5kbTE_DEGs_GO.txt")
+
+HL_filtered<- HL_GO %>%
+  filter(FDR <=0.05)
+
+LL_filtered<- LL_GO %>%
+  filter(FDR <=0.05)
+
+FL_filtered<- FL_GO %>%
+  filter(FDR <=0.05)
+
+SQ_filtered<-SQ_GO %>%
+  filter(FDR <=0.05)
+
+SQ_filtered$log10FDR<- -log10(SQ_filtered$FDR)
+FL_filtered$log10FDR<- -log10(FL_filtered$FDR)
+HL_filtered$log10FDR<- -log10(HL_filtered$FDR)
+
+SQ_plot<-NULL
+SQ_plot$Term<-SQ_filtered$Term
+SQ_plot$Genes<-SQ_filtered$Count
+SQ_plot$log10FDR<-SQ_filtered$log10FDR
+SQ_plot$FDR<-SQ_filtered$FDR
+SQ_plot<-as.data.frame(SQ_plot)
+
+FL_plot<-NULL
+FL_plot$Term<-FL_filtered$Term
+FL_plot$Genes<-FL_filtered$Count
+FL_plot$log10FDR<-FL_filtered$log10FDR
+FL_plot$FDR<-FL_filtered$FDR
+FL_plot<-as.data.frame(FL_plot)
+
+HL_plot<-NULL
+HL_plot$Term<-HL_filtered$Term
+HL_plot$Genes<-HL_filtered$Count
+HL_plot$log10FDR<-HL_filtered$log10FDR
+HL_plot$FDR<-HL_filtered$FDR
+HL_plot<-as.data.frame(HL_plot)
+
+library(viridis)
+library(ggplot2)
+
+# Define the color palette
+inferno_palette <- inferno(100)
+
+# Manually specify colors for specific FDR values
+FDR_colors <- c("#fac228","#f57d15",  
+                "#bc3754", "#9f2a63", 
+                "#65156e", "#280b53", "#000435")
+
+
+# Define the corresponding FDR values for each color
+FDR_breaks <- c(4,3.5,3,2.5,2,1.5,1)
+
+# Create a function to map FDR values to colors
+FDR_colour <- function(fdr) {
+  # Find the index of the nearest FDR value in FDR_breaks
+  index <- which.min(abs(FDR_breaks - fdr))
+  # Return the corresponding color from FDR_colors
+  return(FDR_colors[index])
+}
+
+pdf("GO_DEGs_5kbTE.pdf")
+
+ggplot(SQ_plot, aes(x=Term, y=Genes, fill=log10FDR)) +
+  geom_bar(stat="identity") +
+  geom_col(width=0.1)+
+  ggtitle("GO enrichment, SQHvSQL")+
+  scale_fill_gradientn(colors = FDR_colors, limits = range(FDR_breaks), name = "-log10 FDR") +
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+ggplot(FL_plot, aes(x=Term, y=Genes, fill=log10FDR)) +
+  geom_bar(stat="identity") +
+  ggtitle("GO enrichment, FLHvFLL")+
+  scale_fill_gradientn(colors = FDR_colors, limits = range(FDR_breaks), name = "-log10 FDR") +
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+ggplot(HL_plot, aes(x=Term, y=Genes, fill=log10FDR)) +
+  geom_bar(stat="identity") +
+  ggtitle("GO enrichment, SQHvFLH")+
+  scale_fill_gradientn(colors = FDR_colors, limits = range(FDR_breaks), name = "-log10 FDR") +
+  theme_bw()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),panel.border = element_blank(), panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"))
+
+dev.off()
+
+
